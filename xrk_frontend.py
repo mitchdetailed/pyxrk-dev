@@ -41,8 +41,8 @@ for i in range(items):
     print(x)
     x = XRK.channel_frequency_by_index(aimlog,i)
     print(x)
+
 ## TO DO 
-    # get channel frequency function written. 
     # find a way to dump to csv using pandas df.
 
 
@@ -56,17 +56,4 @@ for i in range(items):
 XRK.close(aimlog)
 
 
-#def round_to_closest(val, numbers):
-#    """
-#    Round the value to the closest number in the provided list.
-#    """
-#    return min(numbers, key=lambda x: abs(x - val))
 
-# List of numbers
-#numbers = [1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000]
-
-# Test the function with a sample value
-#sample_value = 37
-#rounded_value = round_to_closest(sample_value, numbers)
-
-#rounded_value
