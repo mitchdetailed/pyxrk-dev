@@ -148,7 +148,7 @@ xrkdll.get_lap_GPS_raw_channel_samples.argtypes = [ctypes.c_int, ctypes.c_int, c
 ## END DLL Function Prototypes
 
 class XRK():
-    def __init__(self, filename):      
+    def __init__(self, filename):
         self.filename = filename
         self.filepointer = ctypes.c_char_p(self.filename.encode())
         self.idxf = xrkdll.open_file(self.filepointer)
@@ -179,17 +179,50 @@ class XRK():
         return xrkdll.get_championship_name(self.idxf).decode('utf-8')
     
     # returns a string of the venue type
-    def venue_type(self):
+    def session_type(self):
         return xrkdll.get_venue_type_name(self.idxf).decode('utf-8')
     
+    # returns a string of datetime
     def log_datetime(self):
-        logsec = xrkdll.get_date_and_time(self.idxf).contents.second
-        logmin = xrkdll.get_date_and_time(self.idxf).contents.minute
-        loghour = xrkdll.get_date_and_time(self.idxf).contents.hour
-        logday = xrkdll.get_date_and_time(self.idxf).contents.day
-        logmonth = (xrkdll.get_date_and_time(self.idxf).contents.month)+1
-        logyear = (xrkdll.get_date_and_time(self.idxf).contents.year)+1900
-        return f'{logmonth:02}-{logday:02}-{logyear:04} {loghour:02}:{logmin:02}:{logsec:02}'
+        log_sec = xrkdll.get_date_and_time(self.idxf).contents.second
+        log_min = xrkdll.get_date_and_time(self.idxf).contents.minute
+        log_hour = xrkdll.get_date_and_time(self.idxf).contents.hour
+        if log_hour == 0:
+            ampm = 'AM'
+            log_hour = 12
+        elif log_hour < 12:
+            ampm = 'AM'
+        else:
+            ampm = 'PM'
+            if log_hour > 12:
+                log_hour -= 12
+        log_day = xrkdll.get_date_and_time(self.idxf).contents.day
+        log_month = (xrkdll.get_date_and_time(self.idxf).contents.month)+1
+        log_year = (xrkdll.get_date_and_time(self.idxf).contents.year)+1900
+        return f'{log_month:02}/{log_day:02}/{log_year:04} {log_hour:02}:{log_min:02}:{log_sec:02} {ampm}'
+
+    # returns a string of time
+    def log_time(self):
+        log_sec = xrkdll.get_date_and_time(self.idxf).contents.second
+        log_min = xrkdll.get_date_and_time(self.idxf).contents.minute
+        log_hour = xrkdll.get_date_and_time(self.idxf).contents.hour
+        if log_hour == 0:
+            ampm = 'AM'
+            log_hour = 12
+        elif log_hour < 12:
+            ampm = 'AM'
+        else:
+            ampm = 'PM'
+            if log_hour > 12:
+                log_hour -= 12
+        return f'{log_hour:02}:{log_min:02}:{log_sec:02} {ampm}'
+
+    #returns a string of time
+    def log_date(self):
+        log_day = xrkdll.get_date_and_time(self.idxf).contents.day
+        log_month = (xrkdll.get_date_and_time(self.idxf).contents.month)+1
+        log_year = (xrkdll.get_date_and_time(self.idxf).contents.year)+1900
+        return f'{log_month:02}/{log_day:02}/{log_year:04}'
 
     # returns an integer lap count
     def lap_count(self):
@@ -250,13 +283,21 @@ class XRK():
             if current_unit != b'\xbb':
                 current_unit = current_unit.decode('utf-8')
             else:
-                current_unit = 'lambda'
+                current_unit = 'LA'
             return current_unit
         except:
             return 0
             
     def channel_units_by_index(self, idxc):
-        return xrkdll.get_channel_units(self.idxf, idxc).decode('utf-8')
+        try:
+            current_unit = xrkdll.get_channel_units(self.idxf, idxc)
+            if current_unit != b'\xbb':
+                current_unit = current_unit.decode('utf-8')
+            else:
+                current_unit = 'LA'
+            return current_unit
+        except:
+            return 0
     
     def channel_frequency(self,channel_name):
         try:
@@ -291,7 +332,7 @@ class XRK():
         else:
             result = 0
         return result
-
+    
     def channel_times_and_samples(self, channel_name):
         idxc = self.channels.index(channel_name)
         sample_count = self.channel_sample_count_by_index(idxc)
@@ -299,7 +340,7 @@ class XRK():
         samples = []
         timeptr = (ctypes.c_double * sample_count)()
         sampleptr = (ctypes.c_double * sample_count)()
-        success = xrkdll.get_channel_samples(self.idxf, idxc, timeptr, sampleptr, sample_count)
+        xrkdll.get_channel_samples(self.idxf, idxc, timeptr, sampleptr, sample_count)
         for i in range(sample_count):
             times.append(round(timeptr[i],3))
             samples.append(sampleptr[i])
@@ -311,7 +352,7 @@ class XRK():
         samples = []
         timeptr = (ctypes.c_double * sample_count)()
         sampleptr = (ctypes.c_double * sample_count)()
-        success = xrkdll.get_channel_samples(self.idxf, idxc, timeptr, sampleptr, sample_count)
+        xrkdll.get_channel_samples(self.idxf, idxc, timeptr, sampleptr, sample_count)
         for i in range(sample_count):
             times.append(round(timeptr[i],3))
             samples.append(sampleptr[i])
@@ -337,7 +378,7 @@ class XRK():
         samples = []
         timeptr = (ctypes.c_double * sample_count)()
         sampleptr = (ctypes.c_double * sample_count)()
-        success = xrkdll.get_lap_channel_samples(self.idxf, idxl, idxc, timeptr, sampleptr, sample_count)
+        xrkdll.get_lap_channel_samples(self.idxf, idxl, idxc, timeptr, sampleptr, sample_count)
         for i in range(sample_count):
             times.append(round(timeptr[i],3))
             samples.append(sampleptr[i])
@@ -350,7 +391,7 @@ class XRK():
         samples = []
         timeptr = (ctypes.c_double * sample_count)()
         sampleptr = (ctypes.c_double * sample_count)()
-        success = xrkdll.get_lap_channel_samples(self.idxf, idxl, idxc, timeptr, sampleptr, sample_count)
+        xrkdll.get_lap_channel_samples(self.idxf, idxl, idxc, timeptr, sampleptr, sample_count)
         for i in range(sample_count):
             times.append(round(timeptr[i],3))
             samples.append(sampleptr[i])
@@ -370,6 +411,9 @@ class XRK():
             channel_names.append(channel_i) 
         return channel_names
      
+    def GPS_channel_name_by_index(self, idxc):
+        return xrkdll.get_GPS_channel_name(self.idxf, idxc).decode('utf-8')
+
     def GPS_channel_sample_count(self, channel_name):
         try:
             idxc = self.GPS_channels.index(channel_name)
@@ -390,7 +434,40 @@ class XRK():
     def GPS_channel_units_by_index(self, idxc):
             return xrkdll.get_GPS_channel_units(self.idxf, idxc).decode('utf-8')
 
-            
+    def GPS_channel_frequency(self,channel_name):
+        try:
+            idxc = self.channels.index(channel_name)
+            sample_count = xrkdll.get_GPS_channel_samples_count(self.idxf, idxc)
+            if sample_count > 0:
+                laps = self.lap_count()
+                current_start = ctypes.c_double(0)
+                current_duration = ctypes.c_double(0)
+                xrkdll.get_lap_info(self.idxf, laps-1, byref(current_start), byref(current_duration))
+                total_time = round(current_start.value + current_duration.value,3)
+                value = sample_count/total_time
+                numbers = [1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000]
+                result = min(numbers, key=lambda x: abs(x - value))
+            else:
+                result = 0
+            return result
+        except:
+            return 0
+
+    def GPS_channel_frequency_by_index(self,idxc):
+        sample_count = xrkdll.get_GPS_channel_samples_count(self.idxf, idxc)
+        if sample_count > 0:
+            laps = self.lap_count()
+            current_start = ctypes.c_double(0)
+            current_duration = ctypes.c_double(0)
+            xrkdll.get_lap_info(self.idxf, laps-1, byref(current_start), byref(current_duration))
+            total_time = round(current_start.value + current_duration.value,3)
+            value = sample_count/total_time
+            numbers = [1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000]
+            result = min(numbers, key=lambda x: abs(x - value))
+        else:
+            result = 0
+        return result
+
     def GPS_channel_times_and_samples(self, channel_name):
         idxc = self.GPS_channels.index(channel_name)
         sample_count = self.GPS_channel_sample_count_by_index(idxc)
@@ -398,8 +475,7 @@ class XRK():
         samples = []
         timeptr = (ctypes.c_double * sample_count)()
         sampleptr = (ctypes.c_double * sample_count)()
-        success = xrkdll.get_GPS_channel_samples(self.idxf, idxc, timeptr, sampleptr, sample_count)
-        
+        xrkdll.get_GPS_channel_samples(self.idxf, idxc, timeptr, sampleptr, sample_count)
         for i in range(sample_count):
             times.append(round(timeptr[i],3))
             samples.append(sampleptr[i])
@@ -411,7 +487,7 @@ class XRK():
         samples = []
         timeptr = (ctypes.c_double * sample_count)()
         sampleptr = (ctypes.c_double * sample_count)()
-        success = xrkdll.get_GPS_channel_samples(self.idxf, idxc, timeptr, sampleptr, sample_count)
+        xrkdll.get_GPS_channel_samples(self.idxf, idxc, timeptr, sampleptr, sample_count)
         for i in range(sample_count):
             times.append(round(timeptr[i],3))
             samples.append(sampleptr[i])
@@ -437,7 +513,7 @@ class XRK():
         samples = []
         timeptr = (ctypes.c_double * sample_count)()
         sampleptr = (ctypes.c_double * sample_count)()
-        success = xrkdll.get_lap_GPS_channel_samples(self.idxf, idxl, idxc, timeptr, sampleptr, sample_count)
+        xrkdll.get_lap_GPS_channel_samples(self.idxf, idxl, idxc, timeptr, sampleptr, sample_count)
         for i in range(sample_count):
             times.append(round(timeptr[i],3))
             samples.append(sampleptr[i])
@@ -450,7 +526,7 @@ class XRK():
         samples = []
         timeptr = (ctypes.c_double * sample_count)()
         sampleptr = (ctypes.c_double * sample_count)()
-        success = xrkdll.get_lap_GPS_channel_samples(self.idxf, idxl, idxc, timeptr, sampleptr, sample_count)
+        xrkdll.get_lap_GPS_channel_samples(self.idxf, idxl, idxc, timeptr, sampleptr, sample_count)
         for i in range(sample_count):
             times.append(round(timeptr[i],3))
             samples.append(sampleptr[i])
@@ -472,7 +548,10 @@ class XRK():
             channel_i = xrkdll.get_GPS_raw_channel_name(self.idxf, i).decode('utf-8')
             channel_names.append(channel_i) 
         return channel_names
-     
+
+    def GPS_raw_channel_name_by_index(self, idxc):
+        return xrkdll.get_GPS_raw_channel_name(self.idxf, idxc).decode('utf-8')
+
     def GPS_raw_channel_sample_count(self, channel_name):
         try:
             idxc = self.GPS_raw_channels.index(channel_name)
@@ -493,6 +572,40 @@ class XRK():
     def GPS_raw_channel_units_by_index(self, idxc):
             return xrkdll.get_GPS_raw_channel_units(self.idxf, idxc).decode('utf-8')
 
+    def GPS_raw_channel_frequency(self,channel_name):
+        try:
+            idxc = self.channels.index(channel_name)
+            sample_count = xrkdll.get_GPS_raw_channel_samples_count(self.idxf, idxc)
+            if sample_count > 0:
+                laps = self.lap_count()
+                current_start = ctypes.c_double(0)
+                current_duration = ctypes.c_double(0)
+                xrkdll.get_lap_info(self.idxf, laps-1, byref(current_start), byref(current_duration))
+                total_time = round(current_start.value + current_duration.value,3)
+                value = sample_count/total_time
+                numbers = [1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000]
+                result = min(numbers, key=lambda x: abs(x - value))
+            else:
+                result = 0
+            return result
+        except:
+            return 0
+
+    def GPS_raw_channel_frequency_by_index(self,idxc):
+        sample_count = xrkdll.get_GPS_raw_channel_samples_count(self.idxf, idxc)
+        if sample_count > 0:
+            laps = self.lap_count()
+            current_start = ctypes.c_double(0)
+            current_duration = ctypes.c_double(0)
+            xrkdll.get_lap_info(self.idxf, laps-1, byref(current_start), byref(current_duration))
+            total_time = round(current_start.value + current_duration.value,3)
+            value = sample_count/total_time
+            numbers = [1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000]
+            result = min(numbers, key=lambda x: abs(x - value))
+        else:
+            result = 0
+        return result
+
     def GPS_raw_channel_times_and_samples(self, channel_name):
         idxc = self.GPS_raw_channels.index(channel_name)
         sample_count = self.GPS_raw_channel_sample_count_by_index(idxc)
@@ -500,7 +613,7 @@ class XRK():
         samples = []
         timeptr = (ctypes.c_double * sample_count)()
         sampleptr = (ctypes.c_double * sample_count)()
-        success = xrkdll.get_GPS_raw_channel_samples(self.idxf, idxc, timeptr, sampleptr, sample_count)
+        xrkdll.get_GPS_raw_channel_samples(self.idxf, idxc, timeptr, sampleptr, sample_count)
         for i in range(sample_count):
             times.append(round(timeptr[i],3))
             samples.append(sampleptr[i])
@@ -512,7 +625,7 @@ class XRK():
         samples = []
         timeptr = (ctypes.c_double * sample_count)()
         sampleptr = (ctypes.c_double * sample_count)()
-        success = xrkdll.get_GPS_raw_channel_samples(self.idxf, idxc, timeptr, sampleptr, sample_count)
+        xrkdll.get_GPS_raw_channel_samples(self.idxf, idxc, timeptr, sampleptr, sample_count)
         for i in range(sample_count):
             times.append(round(timeptr[i],3))
             samples.append(sampleptr[i])
@@ -538,7 +651,7 @@ class XRK():
         samples = []
         timeptr = (ctypes.c_double * sample_count)()
         sampleptr = (ctypes.c_double * sample_count)()
-        success = xrkdll.get_lap_GPS_raw_channel_samples(self.idxf, idxl, idxc, timeptr, sampleptr, sample_count)
+        xrkdll.get_lap_GPS_raw_channel_samples(self.idxf, idxl, idxc, timeptr, sampleptr, sample_count)
         for i in range(sample_count):
             times.append(round(timeptr[i],3))
             samples.append(sampleptr[i])
@@ -551,10 +664,8 @@ class XRK():
         samples = []
         timeptr = (ctypes.c_double * sample_count)()
         sampleptr = (ctypes.c_double * sample_count)()
-        success = xrkdll.get_lap_GPS_raw_channel_samples(self.idxf, idxl, idxc, timeptr, sampleptr, sample_count)
+        xrkdll.get_lap_GPS_raw_channel_samples(self.idxf, idxl, idxc, timeptr, sampleptr, sample_count)
         for i in range(sample_count):
             times.append(round(timeptr[i],3))
             samples.append(sampleptr[i])
         return [times, samples]
-    
-    
