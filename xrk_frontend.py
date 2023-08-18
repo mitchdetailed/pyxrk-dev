@@ -44,6 +44,7 @@ main_df     = pd.DataFrame(columns=['Time'])
 
 root = tk.Tk()
 root.withdraw()
+print('Loading Program...')
 
 # Open a file dialog to select the XRK file
 file_path = filedialog.askopenfilename(filetypes=[("XRK files", "*.xrk")])
@@ -64,46 +65,50 @@ duration    = int(round((beacons[-1] + laptimes[-1]), 0))
 total_ch    = (int(XRK.channel_count(aimlog)) + int(XRK.GPS_channel_count(aimlog)))
 ch_count = XRK.channel_count(aimlog)
 print('\r\nAnalyzing Non GPS Channels...')
-for channel in tqdm(range(ch_count)):
-    channelname     = XRK.channel_name_by_index(aimlog, channel)
-    channelunit     = XRK.channel_units_by_index(aimlog, channel)
-    channelhz       = XRK.channel_frequency_by_index(aimlog, channel)
-    ch_results      = XRK.channel_times_and_samples_by_index(aimlog, channel)
-    ch_times        = pa.array(ch_results[0])
-    ch_values       = pa.array(ch_results[1])
-    ch_table        = pa.Table.from_arrays([ch_times, ch_values], ['Time', channelname])
-    ch_df           = ch_table.to_pandas(split_blocks=True, self_destruct=True)
-    del ch_table
-    ch_df.columns   = ['Time', channelname]
-    ch_df['Time']   = pd.to_timedelta(ch_df['Time'], unit='s')
-    ch_df.set_index('Time', inplace=True)
-    hz              = hz_to_pandas_freq(sample_rate)
-    ch_df           = ch_df.resample(hz).ffill()
-    main_df         = pd.merge(main_df, ch_df, on='Time', how='outer')
-    ch_names.append(channelname)
-    ch_units.append(channelunit)
+for channel in tqdm(range(ch_count), ascii=True, unit='ch'):
+    samplecount     = XRK.channel_sample_count_by_index(aimlog, channel)
+    if samplecount > 0:
+        channelname     = XRK.channel_name_by_index(aimlog, channel)
+        channelunit     = XRK.channel_units_by_index(aimlog, channel)
+        channelhz       = XRK.channel_frequency_by_index(aimlog, channel)
+        ch_results      = XRK.channel_times_and_samples_by_index(aimlog, channel)
+        ch_times        = pa.array(ch_results[0])
+        ch_values       = pa.array(ch_results[1])
+        ch_table        = pa.Table.from_arrays([ch_times, ch_values], ['Time', channelname])
+        ch_df           = ch_table.to_pandas(split_blocks=True, self_destruct=True)
+        del ch_table
+        ch_df.columns   = ['Time', channelname]
+        ch_df['Time']   = pd.to_timedelta(ch_df['Time'], unit='s')
+        ch_df.set_index('Time', inplace=True)
+        hz              = hz_to_pandas_freq(sample_rate)
+        ch_df           = ch_df.resample(hz).ffill()
+        main_df         = pd.merge(main_df, ch_df, on='Time', how='outer')
+        ch_names.append(channelname)
+        ch_units.append(channelunit)
 
 gps_ch_count = XRK.GPS_channel_count(aimlog)
 print('\r\nAnalyzing GPS Channels...')
-for channel in tqdm(range(gps_ch_count)):
-    channelname     = XRK.GPS_channel_name_by_index(aimlog, channel)
-    channelunit     = XRK.GPS_channel_units_by_index(aimlog, channel)
-    channelhz       = XRK.GPS_channel_frequency_by_index(aimlog, channel)
-    ch_results      = XRK.GPS_channel_times_and_samples_by_index(aimlog, channel)
-    ch_times        = pa.array(ch_results[0], type=pa.float32()) # original values are float64
-    ch_values       = pa.array(ch_results[1], type=pa.float32()) # original values are float64
-    ch_table        = pa.Table.from_arrays([ch_times, ch_values], ['Time', channelname])
-    ch_df           = ch_table.to_pandas(split_blocks=True, self_destruct=True)
-    del ch_table
-    ch_df.columns   = ['Time', channelname]
-    ch_df['Time']   = ch_df['Time'] / 1000
-    ch_df['Time']   = pd.to_timedelta(ch_df['Time'], unit='s')
-    ch_df.set_index('Time', inplace=True)
-    hz              = hz_to_pandas_freq(sample_rate)
-    ch_df           = ch_df.resample(hz).ffill()
-    main_df         = pd.merge(main_df, ch_df, on='Time', how='outer')
-    ch_names.append(channelname)
-    ch_units.append(channelunit)
+for channel in tqdm(range(gps_ch_count), ascii=True, unit='ch'):
+    samplecount     = XRK.GPS_channel_sample_count_by_index(aimlog, channel)
+    if samplecount > 0:
+        channelname     = XRK.GPS_channel_name_by_index(aimlog, channel)
+        channelunit     = XRK.GPS_channel_units_by_index(aimlog, channel)
+        channelhz       = XRK.GPS_channel_frequency_by_index(aimlog, channel)
+        ch_results      = XRK.GPS_channel_times_and_samples_by_index(aimlog, channel)
+        ch_times        = pa.array(ch_results[0], type=pa.float32()) # original values are float64
+        ch_values       = pa.array(ch_results[1], type=pa.float32()) # original values are float64
+        ch_table        = pa.Table.from_arrays([ch_times, ch_values], ['Time', channelname])
+        ch_df           = ch_table.to_pandas(split_blocks=True, self_destruct=True)
+        del ch_table
+        ch_df.columns   = ['Time', channelname]
+        ch_df['Time']   = ch_df['Time'] / 1000
+        ch_df['Time']   = pd.to_timedelta(ch_df['Time'], unit='s')
+        ch_df.set_index('Time', inplace=True)
+        hz              = hz_to_pandas_freq(sample_rate)
+        ch_df           = ch_df.resample(hz).ffill()
+        main_df         = pd.merge(main_df, ch_df, on='Time', how='outer')
+        ch_names.append(channelname)
+        ch_units.append(channelunit)
 
 print('\r\nSorting...')
 main_df.sort_values(by='Time', inplace=True)
