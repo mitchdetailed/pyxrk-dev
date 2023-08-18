@@ -96,7 +96,7 @@ for channel in tqdm(range(gps_ch_count)):
     ch_df           = ch_table.to_pandas(split_blocks=True, self_destruct=True)
     del ch_table
     ch_df.columns   = ['Time', channelname]
-    ch_df['Time']   = ch_df['Time'] / 10000
+    ch_df['Time']   = ch_df['Time'] / 1000
     ch_df['Time']   = pd.to_timedelta(ch_df['Time'], unit='s')
     ch_df.set_index('Time', inplace=True)
     hz              = hz_to_pandas_freq(sample_rate)
