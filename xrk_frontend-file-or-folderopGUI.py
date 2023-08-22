@@ -110,7 +110,6 @@ def hz_to_pandas_freq(hz):
 root = tk.Tk()
 
 
-#root.iconbitmap(r'C:\Users\mitch\Desktop\XRK_0813\XRK-2-CSV.ico')
 root.iconbitmap(iconbmp)
 root.title("Choose an Option")
 root.geometry("450x230")
